@@ -10,3 +10,8 @@
 3. Пароль при вводе с консоли не показывается (смотрите java.io.Console)
 
 4. Пароль хранится не в открытом виде, а хэшируется и в файл пишется только хэш
+
+**Запуск:**
+> $ javac -d ./classes src/com/acbelter/auth/AuthSystem.java -classpath src
+
+> $ java -cp ./classes com.acbelter.auth.AuthSystem
