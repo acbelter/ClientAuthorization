@@ -13,16 +13,12 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
-    public static User createUser(String name, String password) {
-        User user = new User(name);
-        if (password != null) {
-            user.passwordHash = Utils.generatePasswordHash(password);
-        }
-        return user;
-    }
-
     public String getName() {
         return name;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getPasswordHash() {

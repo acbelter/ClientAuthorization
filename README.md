@@ -12,6 +12,6 @@
 4. Пароль хранится не в открытом виде, а хэшируется и в файл пишется только хэш
 
 **Запуск:**
-> $ javac -d ./classes src/com/acbelter/auth/AuthSystem.java -classpath src
+> $ javac -d ./classes src/com/acbelter/auth/AuthorizationService.java -classpath src
 
-> $ java -cp ./classes com.acbelter.auth.AuthSystem
+> $ java -cp ./classes com.acbelter.auth.AuthorizationService
