@@ -36,7 +36,6 @@ public abstract class ServiceCommand implements Comparable<ServiceCommand> {
         ServiceCommand serviceCommand = (ServiceCommand) o;
 
         return name.equals(serviceCommand.name);
-
     }
 
     @Override

@@ -13,6 +13,6 @@ public class LogoutCommand extends ServiceCommand {
 
     @Override
     public void execute(String... args) {
-        service.stopHandleCommandProcess();
+        service.setState(AuthorizationService.State.STARTED);
     }
 }
