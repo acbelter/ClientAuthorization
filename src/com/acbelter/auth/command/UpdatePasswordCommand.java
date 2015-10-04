@@ -2,17 +2,21 @@ package com.acbelter.auth.command;
 
 import com.acbelter.auth.AuthorizationService;
 
-public class UpdatePasswordCommand extends ServiceCommand {
+public class UpdatePasswordCommand extends Command {
+    protected AuthorizationService service;
+
     public UpdatePasswordCommand(AuthorizationService service, String name) {
-        super(service, name);
+        super(name);
+        this.service = service;
     }
 
     public UpdatePasswordCommand(AuthorizationService service, String name, String description) {
-        super(service, name, description);
+        super(name, description);
+        this.service = service;
     }
 
     @Override
-    public void execute(String... args) {
-        service.setState(AuthorizationService.State.UPDATE_PASSWORD);
+    public void execute(String[] args) {
+        service.updatePassword();
     }
 }

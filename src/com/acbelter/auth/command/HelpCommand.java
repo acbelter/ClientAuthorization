@@ -4,21 +4,25 @@ import com.acbelter.auth.AuthorizationService;
 
 import java.io.Console;
 
-public class HelpCommand extends ServiceCommand {
+public class HelpCommand extends Command {
+    protected AuthorizationService service;
+
     public HelpCommand(AuthorizationService service, String name) {
-        super(service, name);
+        super(name);
+        this.service = service;
     }
 
     public HelpCommand(AuthorizationService service, String name, String description) {
-        super(service, name, description);
+        super(name, description);
+        this.service = service;
     }
 
     @Override
-    public void execute(String... args) {
+    public void execute(String[] args) {
         Console console = System.console();
-        console.printf("%s", "Supported commands:\n");
-        for (ServiceCommand command : service.getSupportedCommands()) {
-            console.printf("%s", "\t" + command.getName() + " - " + command.getDescription() + "\n");
+        console.printf("Supported commands:\n");
+        for (Command command : service.getSupportedCommands()) {
+            console.printf("\t%s - %s\n", command.getName(), command.getDescription());
         }
     }
 }

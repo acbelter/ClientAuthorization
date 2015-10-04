@@ -7,13 +7,11 @@ import java.io.Console;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 public class AuthorizationService {
     protected UserDataStorage userDataStorage;
-    protected Map<String, ServiceCommand> serviceCommands;
+    protected Map<String, Command> serviceCommands;
 
     private State currentState;
 
@@ -21,12 +19,11 @@ public class AuthorizationService {
     private String currentUserName;
 
     public enum State {
-        STARTED,
+        START,
         CREATE_USER,
         LOGIN_USER,
-        UPDATE_PASSWORD,
         HANDLE_COMMAND,
-        FINISHED
+        FINISH
     }
 
     public AuthorizationService(UserDataStorage userDataStorage) throws IOException {
@@ -34,14 +31,18 @@ public class AuthorizationService {
         userDataStorage.loadUserData();
 
         serviceCommands = new HashMap<>();
-        addCommand(new HelpCommand(this, "help", "Use this command to show supported commands."));
-        addCommand(new UpdatePasswordCommand(this, "chpwd", "Use this command to change password."));
-        addCommand(new LogoutCommand(this, "logout", "Use this command to switch between users."));
-        addCommand(new ExitCommand(this, "exit", "Use this command to exit."));
+        addCommand(new HelpCommand(this, "/help", "Use this command to show supported commands."));
+        addCommand(new UpdatePasswordCommand(this, "/chpwd", "Use this command to change password."));
+        addCommand(new LogoutCommand(this, "/logout", "Use this command to switch between users."));
+        addCommand(new ExitCommand(this, "/exit", "Use this command to exit."));
     }
 
-    public TreeSet<ServiceCommand> getSupportedCommands() {
-        return new TreeSet<>(serviceCommands.values());
+    public Set<Command> getSupportedCommands() {
+        Set<Command> commands = new TreeSet<>((cmd1, cmd2) -> {
+            return cmd1.getName().compareTo(cmd2.getName());
+        });
+        commands.addAll(serviceCommands.values());
+        return commands;
     }
 
     private boolean validatePassword(User user, String password) {
@@ -52,7 +53,7 @@ public class AuthorizationService {
         return user.getPasswordHash().equalsIgnoreCase(generateHash(password));
     }
 
-    public void run() {
+    public void init() {
         console = System.console();
         if (console == null) {
             System.err.println("No access to system console.\n");
@@ -62,37 +63,43 @@ public class AuthorizationService {
         try {
             userDataStorage.loadUserData();
         } catch (IOException e) {
-            console.printf("%s", "Failed to load user data.\n");
+            console.printf("Failed to load user data.\n");
             return;
         }
 
         startAuthorizationLoop();
     }
 
-    private void addCommand(ServiceCommand command) {
+    private void addCommand(Command command) {
         serviceCommands.put(command.getName(), command);
     }
 
     private void startAuthorizationLoop() {
-        currentState = State.STARTED;
+        currentState = State.START;
 
         while (true) {
+            System.out.println(currentState.name());
             switch (currentState) {
-                case STARTED: {
+                case START: {
                     currentUserName = null;
-                    console.printf("%s", "Do you want to create new user? (yes/no)\n");
+                    console.printf("Do you want to create new user? (y/n or yes/no)\n");
                     String answer = console.readLine().trim();
-                    if (answer.equalsIgnoreCase("yes")) {
+                    if (answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes")) {
                         currentState = State.CREATE_USER;
-                    } else if (answer.equalsIgnoreCase("no")) {
+                    } else if (answer.equalsIgnoreCase("n") || answer.equalsIgnoreCase("no")) {
                         currentState = State.LOGIN_USER;
                     }
                     break;
                 }
                 case CREATE_USER: {
                     String username = readUsername();
+                    if (username.isEmpty()) {
+                        currentState = State.START;
+                        continue;
+                    }
+
                     if (userDataStorage.isUserExists(username)) {
-                        console.printf("%s", "This user already exists.\n");
+                        console.printf("This user already exists.\n");
                         continue;
                     }
 
@@ -103,32 +110,38 @@ public class AuthorizationService {
                         newUser.setPasswordHash(passwordHash);
                         userDataStorage.addUser(newUser);
                         currentUserName = username;
-                        console.printf("%s", "New user is created.\n");
-                        console.printf("%s", "Hello, " + currentUserName + "!\n");
+                        console.printf("New user is created.\n");
+                        console.printf("Hello, %s!\n", currentUserName);
                         currentState = State.HANDLE_COMMAND;
                     } else {
-                        console.printf("%s", "Unable to create new user.\n");
+                        console.printf("Unable to create new user.\n");
+                        currentState = State.LOGIN_USER;
                     }
                     break;
                 }
                 case LOGIN_USER: {
                     String username = readUsername();
+                    if (username.isEmpty()) {
+                        currentState = State.START;
+                        continue;
+                    }
+
                     if (userDataStorage.isUserExists(username)) {
                         User user = userDataStorage.getUser(username);
                         while (true) {
                             String password = readPassword();
                             if (validatePassword(user, password)) {
-                                console.printf("%s", "Hello, " + username + "!\n");
                                 currentUserName = username;
+                                console.printf("Hello, %s!\n", currentUserName);
                                 currentState = State.HANDLE_COMMAND;
                                 break;
                             } else {
-                                console.printf("%s", "Invalid password. Try again.\n");
+                                console.printf("Invalid password. Try again.\n");
                             }
                         }
                     } else {
-                        console.printf("%s", "User with this name does not exist.\n");
-                        currentState = State.STARTED;
+                        console.printf("User with this name does not exist.\n");
+                        currentState = State.START;
                     }
                     break;
                 }
@@ -141,41 +154,20 @@ public class AuthorizationService {
 
                     String commandName = commandParts[0];
                     if (!serviceCommands.containsKey(commandName)) {
-                        console.printf("%s", "Unknown command. Try again.\n");
+                        console.printf("Unknown command. Try again.\n");
                         continue;
                     }
 
-                    ServiceCommand command = serviceCommands.get(commandName);
+                    Command command = serviceCommands.get(commandName);
                     if (commandParts.length == 1) {
-                        command.execute();
+                        command.execute(new String[0]);
                     } else {
-                        String[] commandArgs = new String[commandParts.length - 1];
-                        System.arraycopy(commandParts, 1, commandArgs, 0, commandParts.length - 1);
+                        String[] commandArgs = Arrays.copyOfRange(commandParts, 1, commandParts.length - 1);
                         command.execute(commandArgs);
                     }
                     break;
                 }
-                case UPDATE_PASSWORD: {
-                    if (currentUserName == null) {
-                        console.printf("%s", "Unknown user.\n");
-                        currentState = State.STARTED;
-                        continue;
-                    }
-
-                    String newPassword = readNewPassword();
-                    User user = new User(currentUserName);
-                    String passwordHash = generateHash(newPassword);
-                    if (passwordHash != null) {
-                        user.setPasswordHash(passwordHash);
-                        userDataStorage.updateUser(user);
-                        console.printf("%s", "Password is updated.\n");
-                    } else {
-                        console.printf("%s", "Unable to update password.\n");
-                    }
-                    currentState = State.HANDLE_COMMAND;
-                    break;
-                }
-                case FINISHED: {
+                case FINISH: {
                     currentUserName = null;
                     return;
                 }
@@ -184,22 +176,14 @@ public class AuthorizationService {
     }
 
     private String readUsername() {
-        String username;
-        while (true) {
-            console.printf("%s", "Username:");
-            username = console.readLine().trim();
-            if (username.isEmpty()) {
-                console.printf("%s", "Username is empty. Try again.\n");
-            } else {
-                return username;
-            }
-        }
+        console.printf("Username:");
+        return console.readLine().trim();
     }
 
     private String readPassword() {
         String password;
         while (true) {
-            console.printf("%s", "Password:");
+            console.printf("Password:");
             password = new String(console.readPassword());
             if (!password.trim().isEmpty()) {
                 return password;
@@ -211,18 +195,38 @@ public class AuthorizationService {
         String newPassword;
         String confirmedNewPassword;
         while (true) {
-            console.printf("%s", "New password:");
+            console.printf("New password:");
             newPassword = new String(console.readPassword());
             if (newPassword.trim().isEmpty()) {
                 continue;
             }
-            console.printf("%s", "Confirm new password:");
+            console.printf("Confirm new password:");
             confirmedNewPassword = new String(console.readPassword());
             if (newPassword.equals(confirmedNewPassword)) {
                 return newPassword;
             } else {
-                console.printf("%s", "Passwords are not equal. Try again.\n");
+                console.printf("Passwords are not equal. Try again.\n");
             }
+        }
+    }
+
+    public boolean updatePassword() {
+        if (currentUserName == null) {
+            console.printf("Unknown user.\n");
+            return false;
+        }
+
+        String newPassword = readNewPassword();
+        User user = new User(currentUserName);
+        String passwordHash = generateHash(newPassword);
+        if (passwordHash != null) {
+            user.setPasswordHash(passwordHash);
+            userDataStorage.updateUser(user);
+            console.printf("Password is updated.\n");
+            return true;
+        } else {
+            console.printf("Unable to update password.\n");
+            return false;
         }
     }
 
@@ -259,7 +263,7 @@ public class AuthorizationService {
         AuthorizationService authService;
         try {
             authService = new AuthorizationService(new UserDataFileStorage());
-            authService.run();
+            authService.init();
         } catch (IOException e) {
             System.err.println("Unable to create authorization service.");
         }
