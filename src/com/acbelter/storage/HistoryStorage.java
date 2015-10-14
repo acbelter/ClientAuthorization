@@ -1,11 +1,11 @@
-package com.acbelter.auth;
+package com.acbelter.storage;
 
 import com.acbelter.User;
 
 import java.io.IOException;
 
-public interface UserDataStorage {
-    void loadUserData() throws IOException;
+public interface HistoryStorage {
+    void loadHistory() throws IOException;
     boolean addUser(User user);
     boolean updateUser(User user);
     boolean isUserExists(String name);

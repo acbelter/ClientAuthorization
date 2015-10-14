@@ -1,4 +1,4 @@
-package com.acbelter.auth;
+package com.acbelter.storage;
 
 import com.acbelter.User;
 

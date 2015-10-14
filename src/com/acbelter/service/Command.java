@@ -1,4 +1,4 @@
-package com.acbelter.auth.command;
+package com.acbelter.service;
 
 public abstract class Command {
     protected String name;

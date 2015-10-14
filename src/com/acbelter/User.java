@@ -3,6 +3,7 @@ package com.acbelter;
 public class User {
     protected String name;
     protected String passwordHash;
+    protected String nick;
 
     public User(String name) {
         this.name = name;
@@ -23,6 +24,14 @@ public class User {
 
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public String getNick() {
+        return nick;
+    }
+
+    public void setNick(String nick) {
+        this.nick = nick;
     }
 
     @Override
@@ -46,6 +55,7 @@ public class User {
         return "User{" +
                 "name='" + name + '\'' +
                 ", passwordHash='" + passwordHash + '\'' +
+                ", nick='" + nick + '\'' +
                 '}';
     }
 }
