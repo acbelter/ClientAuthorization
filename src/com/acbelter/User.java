@@ -1,21 +1,21 @@
 package com.acbelter;
 
 public class User {
-    protected String name;
+    protected String login;
     protected String passwordHash;
     protected String nick;
 
-    public User(String name) {
-        this.name = name;
+    public User(String login) {
+        this.login = login;
     }
 
-    public User(String name, String passwordHash) {
-        this.name = name;
+    public User(String login, String passwordHash) {
+        this.login = login;
         this.passwordHash = passwordHash;
     }
 
-    public String getName() {
-        return name;
+    public String getLogin() {
+        return login;
     }
 
     public void setPasswordHash(String passwordHash) {
@@ -41,19 +41,18 @@ public class User {
 
         User user = (User) o;
 
-        return name.equals(user.name);
-
+        return login.equals(user.login);
     }
 
     @Override
     public int hashCode() {
-        return name.hashCode();
+        return login.hashCode();
     }
 
     @Override
     public String toString() {
         return "User{" +
-                "name='" + name + '\'' +
+                "login='" + login + '\'' +
                 ", passwordHash='" + passwordHash + '\'' +
                 ", nick='" + nick + '\'' +
                 '}';
