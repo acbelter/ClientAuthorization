@@ -1,4 +1,4 @@
-package com.acbelter.auth;
+package com.acbelter.storage;
 
 import com.acbelter.User;
 
@@ -10,23 +10,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UserDataFileStorage implements UserDataStorage {
-    private static final String USER_DATA_FILE_NAME = "userdata";
-
+    protected String storageFilename;
     protected Map<String, User> usersMap;
 
-    public UserDataFileStorage() {
+    public UserDataFileStorage(String storageFilename) {
+        this.storageFilename = storageFilename;
         usersMap = new HashMap<>();
     }
 
     @Override
-    public void loadUserData() throws IOException {
+    public void loadUsersData() throws IOException {
         usersMap.clear();
 
-        if (!Files.exists(Paths.get(USER_DATA_FILE_NAME))) {
-            Files.createFile(Paths.get(USER_DATA_FILE_NAME));
+        if (Files.notExists(Paths.get(storageFilename))) {
+            Files.createFile(Paths.get(storageFilename));
         }
 
-        for (String line : Files.readAllLines(Paths.get(USER_DATA_FILE_NAME))) {
+        for (String line : Files.readAllLines(Paths.get(storageFilename))) {
             if (!line.isEmpty()) {
                 String[] data = line.split(" ");
                 if (data.length != 2) {
@@ -41,14 +41,15 @@ public class UserDataFileStorage implements UserDataStorage {
 
     @Override
     public boolean addUser(User user) {
-        if (user == null || user.getName() == null || user.getPasswordHash() == null) {
+        if (user == null || user.getLogin() == null || user.getPasswordHash() == null) {
             return false;
         }
 
         try {
-            String userData = user.getName() + " " + user.getPasswordHash() + "\n";
-            Files.write(Paths.get(USER_DATA_FILE_NAME), userData.getBytes(), StandardOpenOption.APPEND);
-            usersMap.put(user.getName(), user);
+            String userData = user.getLogin() + " " + user.getPasswordHash() + "\n";
+            Files.write(Paths.get(storageFilename), userData.getBytes(),
+                    StandardOpenOption.APPEND);
+            usersMap.put(user.getLogin(), user);
         } catch (IOException e) {
             return false;
         }
@@ -58,18 +59,18 @@ public class UserDataFileStorage implements UserDataStorage {
     @Override
     public boolean updateUser(User user) {
         if (user == null ||
-                user.getName() == null ||
+                user.getLogin() == null ||
                 user.getPasswordHash() == null ||
-                !usersMap.containsKey(user.getName())) {
+                !usersMap.containsKey(user.getLogin())) {
             return false;
         }
 
 
-        User oldUser = usersMap.put(user.getName(), user);
+        User oldUser = usersMap.put(user.getLogin(), user);
         try {
-            Files.write(Paths.get(USER_DATA_FILE_NAME), getUserDataString().getBytes());
+            Files.write(Paths.get(storageFilename), getUserDataString().getBytes());
         } catch (IOException e) {
-            usersMap.put(oldUser.getName(), oldUser);
+            usersMap.put(oldUser.getLogin(), oldUser);
             return false;
         }
 
@@ -79,18 +80,18 @@ public class UserDataFileStorage implements UserDataStorage {
     private String getUserDataString() {
         StringBuilder builder = new StringBuilder();
         for (User user : usersMap.values()) {
-            builder.append(user.getName()).append(" ").append(user.getPasswordHash()).append("\n");
+            builder.append(user.getLogin()).append(" ").append(user.getPasswordHash()).append("\n");
         }
         return builder.toString();
     }
 
     @Override
-    public boolean isUserExists(String name) {
-        return name != null && usersMap.containsKey(name);
+    public boolean isUserExists(String login) {
+        return login != null && usersMap.containsKey(login);
     }
 
     @Override
-    public User getUser(String name) {
-        return usersMap.get(name);
+    public User getUser(String login) {
+        return usersMap.get(login);
     }
 }
