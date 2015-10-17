@@ -22,7 +22,7 @@ public class UserDataFileStorage implements UserDataStorage {
     public void loadUsersData() throws IOException {
         usersMap.clear();
 
-        if (!Files.exists(Paths.get(storageFilename))) {
+        if (Files.notExists(Paths.get(storageFilename))) {
             Files.createFile(Paths.get(storageFilename));
         }
 

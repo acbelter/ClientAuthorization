@@ -7,11 +7,13 @@ public class User {
 
     public User(String login) {
         this.login = login;
+        this.nick = login;
     }
 
     public User(String login, String passwordHash) {
         this.login = login;
         this.passwordHash = passwordHash;
+        this.nick = login;
     }
 
     public String getLogin() {
@@ -32,6 +34,10 @@ public class User {
 
     public void setNick(String nick) {
         this.nick = nick;
+    }
+
+    public void resetNick() {
+        nick = login;
     }
 
     @Override

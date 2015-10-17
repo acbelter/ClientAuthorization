@@ -3,9 +3,11 @@ package com.acbelter.command;
 import java.util.Arrays;
 
 public abstract class Command {
+    protected String name;
     protected String description;
 
-    public Command(String description) {
+    public Command(String name, String description) {
+        this.name = name;
         this.description = description;
     }
 
@@ -36,6 +38,14 @@ public abstract class Command {
 
     public abstract void execute(String[] args);
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public void setDescription(String description) {
         this.description = description;
     }
@@ -46,6 +56,6 @@ public abstract class Command {
 
     @Override
     public String toString() {
-        return description;
+        return name + " " + description;
     }
 }

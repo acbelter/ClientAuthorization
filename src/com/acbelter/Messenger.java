@@ -1,6 +1,7 @@
 package com.acbelter;
 
 import com.acbelter.command.Command;
+import com.acbelter.command.HelpCommand;
 import com.acbelter.service.AuthService;
 import com.acbelter.service.ChatService;
 import com.acbelter.storage.ChatHistoryFileStorage;
@@ -17,7 +18,7 @@ import java.util.TreeMap;
 public class Messenger {
     private Scanner in;
     private PrintStream out;
-    private InputHandler mainHandler;
+    private InputHandler inputHandler;
     private AuthService authService;
     private ChatService chatService;
     private UserDataStorage userDataStorage;
@@ -34,64 +35,61 @@ public class Messenger {
         this.chatHistoryStorage = chatHistoryStorage;
 
         commands = new TreeMap<>();
-        commands.put("/login", new LoginCommand("Use /login to create new user or /login <login> <password> to authorize."));
-        commands.put("/help", new HelpCommand("Use this command to show supported commands."));
-        mainHandler = new MainInputHandler(in, out, commands);
+        addCommand(new HelpCommand("/help",
+                "Use /help to show supported commands.", out, commands));
+        addCommand(new LoginCommand("/login",
+                "Use /login to create new user or /login <login> <password> to authorize."));
+        addCommand(new QuitCommand("/quit",
+                "Use /quit to quit from messenger."));
+        inputHandler = new InputHandler(in, out, commands) {
+            @Override
+            protected void handleString(String string) {}
+
+            @Override
+            protected void interrupted() {}
+        };
+    }
+
+    private void addCommand(Command command) {
+        commands.put(command.getName(), command);
     }
 
     public void start() {
         try {
             authService = new AuthService(in, out, userDataStorage);
-            mainHandler.handle();
+            inputHandler.handle();
         } catch (IOException e) {
             out.println("Unable to create authorization service.");
         }
     }
 
-    private class MainInputHandler extends InputHandler {
-        private PrintStream out;
 
-        public MainInputHandler(Scanner scanner, PrintStream out, Map<String, Command> commandMap) {
-            super(scanner, commandMap);
-            this.out = out;
-        }
-
-        @Override
-        public void handle() {
-            while (true) {
-                String line = scanner.nextLine();
-                if (Command.isCommand(line)) {
-                    String name = Command.parseName(line);
-                    String[] args = Command.parseArgs(line);
-                    if (commandMap.containsKey(name)) {
-                        commandMap.get(name).execute(args);
-                    } else {
-                        out.println("Unknown command. Try again.");
-                    }
-                }
-            }
-        }
-    }
 
     private class LoginCommand extends Command {
-        public LoginCommand(String description) {
-            super(description);
+        public LoginCommand(String name, String description) {
+            super(name, description);
         }
 
         @Override
         public void execute(String[] args) {
             User user;
-            if (args.length == 0) {
-                user = authService.createUser();
-            } else if (args.length == 2) {
-                user = authService.loginUser(args[0], args[1]);
-            } else {
-                out.println("Unknown command syntax. Use /login or /login <login> <password>");
-                return;
+            switch (args.length) {
+                case 0: {
+                    user = authService.createUser();
+                    break;
+                }
+                case 2: {
+                    user = authService.loginUser(args[0], args[1]);
+                    break;
+                }
+                default: {
+                    out.println("Incorrect number of arguments.\n" + description);
+                    return;
+                }
             }
 
             if (user != null) {
-                chatService = new ChatService(user, in, out, chatHistoryStorage);
+                chatService = new ChatService(user, in, out, userDataStorage, chatHistoryStorage);
                 chatService.start();
             } else {
                 out.println("Unable to authorize.");
@@ -99,17 +97,14 @@ public class Messenger {
         }
     }
 
-    private class HelpCommand extends Command {
-        public HelpCommand(String description) {
-            super(description);
+    private class QuitCommand extends Command {
+        public QuitCommand(String name, String description) {
+            super(name, description);
         }
 
         @Override
         public void execute(String[] args) {
-            out.println("Supported commands:");
-            for (Map.Entry<String, Command> entry : commands.entrySet()) {
-                out.printf("\t%s - %s\n", entry.getKey(), entry.getValue().getDescription());
-            }
+            inputHandler.interrupt();
         }
     }
 
@@ -118,7 +113,7 @@ public class Messenger {
                 new Scanner(System.in),
                 System.out,
                 new UserDataFileStorage("userdata"),
-                new ChatHistoryFileStorage());
+                new ChatHistoryFileStorage("history"));
         messenger.start();
     }
 }

@@ -94,7 +94,7 @@ public class AuthService {
         }
     }
 
-    public String readNewPassword() {
+    private String readNewPassword() {
         String newPassword;
         String confirmedNewPassword;
         while (true) {
@@ -113,7 +113,7 @@ public class AuthService {
         }
     }
 
-    private static boolean validatePassword(User user, String password) {
+    public static boolean validatePassword(User user, String password) {
         if (user == null || user.getPasswordHash() == null || password == null) {
             return false;
         }
@@ -121,7 +121,7 @@ public class AuthService {
         return user.getPasswordHash().equalsIgnoreCase(generateHash(password));
     }
 
-    private static String generateHash(String data) {
+    public static String generateHash(String data) {
         if (data == null) {
             return null;
         }
